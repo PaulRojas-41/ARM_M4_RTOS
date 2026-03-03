@@ -1,0 +1,14 @@
+*.o
+*.d
+*.su
+*.cyclo
+*.list
+*.bin
+*.elf
+*.hex
+*.map
+*.launch
+*.cproject
+*.project
+.metadata/
+.settings/
