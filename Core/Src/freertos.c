@@ -49,9 +49,13 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
+
 /* Definitions for defaultTask */
+
 osThreadId_t defaultTaskHandle;
 osThreadId_t helloTaskHandle;
+osThreadId_t ToggleBledHandle;
+osThreadId_t ToggleOledHandle;
 
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
@@ -64,6 +68,19 @@ const osThreadAttr_t HelloTask_att = {
 	.stack_size = 128 * 4,
 	.priority = (osPriority_t)osPriorityNormal,
 };
+
+const osThreadAttr_t Toggle_Bled_att = {
+	.name = "Toggle_Bled",
+	.stack_size = 128 * 4,
+	.priority = (osPriority_t)osPriorityNormal,
+};
+
+const osThreadAttr_t Toggle_Oled_att = {
+	.name = "Toggle_Oled",
+	.stack_size = 128 * 4,
+	.priority = (osPriority_t)osPriorityNormal,
+};
+
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
@@ -71,7 +88,8 @@ const osThreadAttr_t HelloTask_att = {
 
 void StartDefaultTask(void *argument);
 void HelloTask();
-
+void Toggle_Bled_task();
+void Toggle_Oled_task();
 volatile uint8_t hellotask_counter;
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -106,6 +124,9 @@ void MX_FREERTOS_Init(void) {
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
   helloTaskHandle   = osThreadNew(HelloTask, NULL, &HelloTask_att);
+  ToggleBledHandle  = osThreadNew(Toggle_Bled_task, NULL, &Toggle_Bled_att);
+  ToggleOledHandle  = osThreadNew(Toggle_Oled_task, NULL, &Toggle_Oled_att);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -152,6 +173,30 @@ void HelloTask()
     hellotask_counter++;
   }
   /* USER CODE END HelloTask */
+}
+
+void Toggle_Bled_task()
+{
+	/* USER CODE BEGIN Toggle_Bled */
+	/* Infinite loop */
+	for(;;)
+	{
+	  osDelay(1000);
+	  GPIOD->ODR ^= (1 << 15);
+	}
+	/* USER CODE END Toggle_Bled */
+}
+
+void Toggle_Oled_task()
+{
+	/* USER CODE BEGIN Toggle_Oled */
+	/* Infinite loop */
+	for(;;)
+	{
+	  osDelay(2000);
+	  GPIOD->ODR ^= (1 << 13);
+	}
+	/* USER CODE END Toggle_Bled */
 }
 
 /* USER CODE END HelloTask */
