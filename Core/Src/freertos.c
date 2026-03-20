@@ -23,8 +23,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 
-#include <stdlib.h>
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -42,43 +40,42 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+#define RXBUFFERSIZE 10
+/* Exported macro ------------------------------------------------------------*/
+#define COUNTOF(__BUFFER__)   (sizeof(__BUFFER__) / sizeof(*(__BUFFER__)))
+/* Exported functions ------------------------------------------------------- */
+/* Size of Transmission buffer */
+#define TXBUFFERSIZE                      (COUNTOF(aTxBuffer) - 1)
+/* Size of Reception buffer */
 
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+const char tx_buffer[] = {"Hello USART2 in RTOS..........!\n"};
+const char tx_buffer_2[] = {"Background print!\n"};
 
 /* USER CODE END Variables */
-
-/* Definitions for defaultTask */
-
-osThreadId_t defaultTaskHandle;
-osThreadId_t helloTaskHandle;
-osThreadId_t ToggleBledHandle;
-osThreadId_t ToggleOledHandle;
-
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
+/* Definitions for led_blink */
+osThreadId_t led_blinkHandle;
+const osThreadAttr_t led_blink_attributes = {
+  .name = "led_blink",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityLow6,
 };
-
-const osThreadAttr_t HelloTask_att = {
-	.name = "HelloTask",
-	.stack_size = 128 * 4,
-	.priority = (osPriority_t)osPriorityNormal,
+/* Definitions for usart2_print */
+osThreadId_t usart2_printHandle;
+const osThreadAttr_t usart2_print_attributes = {
+  .name = "usart2_print",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow7,
 };
-
-const osThreadAttr_t Toggle_Bled_att = {
-	.name = "Toggle_Bled",
-	.stack_size = 128 * 4,
-	.priority = (osPriority_t)osPriorityNormal,
-};
-
-const osThreadAttr_t Toggle_Oled_att = {
-	.name = "Toggle_Oled",
-	.stack_size = 128 * 4,
-	.priority = (osPriority_t)osPriorityNormal,
+/* Definitions for usart2_print2 */
+osThreadId_t usart2_print2Handle;
+const osThreadAttr_t usart2_print2_attributes = {
+  .name = "usart2_print2",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh7,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -86,11 +83,9 @@ const osThreadAttr_t Toggle_Oled_att = {
 
 /* USER CODE END FunctionPrototypes */
 
-void StartDefaultTask(void *argument);
-void HelloTask();
-void Toggle_Bled_task();
-void Toggle_Oled_task();
-volatile uint8_t hellotask_counter;
+void led_blink_func(void *argument);
+void usart2_print_func(void *argument);
+void usart2_print2_func(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -121,11 +116,14 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-  helloTaskHandle   = osThreadNew(HelloTask, NULL, &HelloTask_att);
-  ToggleBledHandle  = osThreadNew(Toggle_Bled_task, NULL, &Toggle_Bled_att);
-  ToggleOledHandle  = osThreadNew(Toggle_Oled_task, NULL, &Toggle_Oled_att);
+  /* creation of led_blink */
+  led_blinkHandle = osThreadNew(led_blink_func, NULL, &led_blink_attributes);
+
+  /* creation of usart2_print */
+  usart2_printHandle = osThreadNew(usart2_print_func, NULL, &usart2_print_attributes);
+
+  /* creation of usart2_print2 */
+  usart2_print2Handle = osThreadNew(usart2_print2_func, NULL, &usart2_print2_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -137,70 +135,70 @@ void MX_FREERTOS_Init(void) {
 
 }
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_led_blink_func */
 /**
-  * @brief  Function implementing the defaultTask thread.
+  * @brief  Function implementing the led_blink_t thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+/* USER CODE END Header_led_blink_func */
+void led_blink_func(void *argument)
 {
-  /* USER CODE BEGIN StartDefaultTask */
+  /* USER CODE BEGIN led_blink_func */
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
-  }
-  /* USER CODE END StartDefaultTask */
-}
-
-/* USER CODE BEGIN HelloTask */
-/**
-  * @brief  Function implementing the HelloTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END HelloTask */
-
-void HelloTask()
-{
-  /* USER CODE BEGIN HelloTask */
-  /* Infinite loop */
-  for(;;)
-  {
+	GPIOD->ODR ^= (1 << 15);
     osDelay(1000);
-    hellotask_counter++;
   }
-  /* USER CODE END HelloTask */
+  /* USER CODE END led_blink_func */
 }
 
-void Toggle_Bled_task()
+/* USER CODE BEGIN Header_usart2_print_func */
+/**
+* @brief Function implementing the usart2_print_t thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_usart2_print_func */
+void usart2_print_func(void *argument)
 {
-	/* USER CODE BEGIN Toggle_Bled */
-	/* Infinite loop */
-	for(;;)
+  /* USER CODE BEGIN usart2_print_func */
+  /* Infinite loop */
+  for(;;)
+  {
+	for(int i =0; i < sizeof(tx_buffer); i++)
 	{
-	  osDelay(1000);
-	  GPIOD->ODR ^= (1 << 15);
+		USART2->DR = tx_buffer[i];
+		while(!(USART2->SR & (1 << 6)));
 	}
-	/* USER CODE END Toggle_Bled */
+    osDelay(10);
+  }
+  /* USER CODE END usart2_print_func */
 }
 
-void Toggle_Oled_task()
+/* USER CODE BEGIN Header_usart2_print2_func */
+/**
+* @brief Function implementing the usart2_print2 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_usart2_print2_func */
+void usart2_print2_func(void *argument)
 {
-	/* USER CODE BEGIN Toggle_Oled */
-	/* Infinite loop */
-	for(;;)
+  /* USER CODE BEGIN usart2_print2_func */
+  /* Infinite loop */
+  for(;;)
+  {
+	for(int j=0; j < sizeof(tx_buffer_2); j++)
 	{
-	  osDelay(2000);
-	  GPIOD->ODR ^= (1 << 13);
+		USART2->DR = tx_buffer_2[j];
+		while(!(USART2->SR & (1 << 6)));
 	}
-	/* USER CODE END Toggle_Bled */
+    osDelay(100);
+  }
+  /* USER CODE END usart2_print2_func */
 }
-
-/* USER CODE END HelloTask */
-
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
