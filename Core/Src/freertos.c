@@ -22,6 +22,8 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
+#include "usart.h"
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -52,8 +54,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-const char tx_buffer[] = {"Hello USART2 in RTOS..........!\n"};
-const char tx_buffer_2[] = {"Background print!\n"};
+uint8_t rx_buffer[4];
 
 /* USER CODE END Variables */
 /* Definitions for led_blink */
@@ -61,21 +62,21 @@ osThreadId_t led_blinkHandle;
 const osThreadAttr_t led_blink_attributes = {
   .name = "led_blink",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow6,
+  .priority = (osPriority_t) osPriorityBelowNormal7,
 };
-/* Definitions for usart2_print */
-osThreadId_t usart2_printHandle;
-const osThreadAttr_t usart2_print_attributes = {
-  .name = "usart2_print",
+/* Definitions for usart2_tx */
+osThreadId_t usart2_txHandle;
+const osThreadAttr_t usart2_tx_attributes = {
+  .name = "usart2_tx",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow7,
+  .priority = (osPriority_t) osPriorityHigh2,
 };
-/* Definitions for usart2_print2 */
-osThreadId_t usart2_print2Handle;
-const osThreadAttr_t usart2_print2_attributes = {
-  .name = "usart2_print2",
+/* Definitions for usart2_rx */
+osThreadId_t usart2_rxHandle;
+const osThreadAttr_t usart2_rx_attributes = {
+  .name = "usart2_rx",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityHigh7,
+  .priority = (osPriority_t) osPriorityRealtime1,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -84,8 +85,8 @@ const osThreadAttr_t usart2_print2_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void led_blink_func(void *argument);
-void usart2_print_func(void *argument);
-void usart2_print2_func(void *argument);
+void usart2_tx_func(void *argument);
+void usart2_rx_func(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -119,11 +120,11 @@ void MX_FREERTOS_Init(void) {
   /* creation of led_blink */
   led_blinkHandle = osThreadNew(led_blink_func, NULL, &led_blink_attributes);
 
-  /* creation of usart2_print */
-  usart2_printHandle = osThreadNew(usart2_print_func, NULL, &usart2_print_attributes);
+  /* creation of usart2_tx */
+  usart2_txHandle = osThreadNew(usart2_tx_func, NULL, &usart2_tx_attributes);
 
-  /* creation of usart2_print2 */
-  usart2_print2Handle = osThreadNew(usart2_print2_func, NULL, &usart2_print2_attributes);
+  /* creation of usart2_rx */
+  usart2_rxHandle = osThreadNew(usart2_rx_func, NULL, &usart2_rx_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -154,50 +155,54 @@ void led_blink_func(void *argument)
   /* USER CODE END led_blink_func */
 }
 
-/* USER CODE BEGIN Header_usart2_print_func */
+/* USER CODE BEGIN Header_usart2_tx_func */
 /**
-* @brief Function implementing the usart2_print_t thread.
+* @brief Function implementing the usart2_tx thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_usart2_print_func */
-void usart2_print_func(void *argument)
+/* USER CODE END Header_usart2_tx_func */
+void usart2_tx_func(void *argument)
 {
-  /* USER CODE BEGIN usart2_print_func */
+  /* USER CODE BEGIN usart2_tx_func */
   /* Infinite loop */
   for(;;)
   {
-	for(int i =0; i < sizeof(tx_buffer); i++)
-	{
-		USART2->DR = tx_buffer[i];
-		while(!(USART2->SR & (1 << 6)));
-	}
-    osDelay(10);
+	  for(uint8_t j = 0; j < sizeof(rx_buffer); j++)
+	 {
+	  	 /* If TXE flag is set, write data byte to DR */
+	  	 while(!(USART2->SR & (1 << 6)));
+	  	 USART2->DR = (rx_buffer[j] & 0xFF);
+	 }
+	 osDelay(10);
   }
-  /* USER CODE END usart2_print_func */
+  /* USER CODE END usart2_tx_func */
 }
 
-/* USER CODE BEGIN Header_usart2_print2_func */
+/* USER CODE BEGIN Header_usart2_rx_func */
 /**
-* @brief Function implementing the usart2_print2 thread.
+* @brief Function implementing the usart2_rx thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_usart2_print2_func */
-void usart2_print2_func(void *argument)
+/* USER CODE END Header_usart2_rx_func */
+void usart2_rx_func(void *argument)
 {
-  /* USER CODE BEGIN usart2_print2_func */
+
+  /* USER CODE BEGIN usart2_rx_func */
   /* Infinite loop */
   for(;;)
   {
-	for(int j=0; j < sizeof(tx_buffer_2); j++)
-	{
-		USART2->DR = tx_buffer_2[j];
-		while(!(USART2->SR & (1 << 6)));
-	}
-    osDelay(100);
+	  for(uint8_t i= 0; i < sizeof(rx_buffer); i++)
+	  {
+	  	/* When a character is received, wait until RXNE flag is set, then read data */
+	  	while(!(USART2->SR & (1 << 5)));
+	  	rx_buffer[i] = USART2->DR; /* 0xFF & DATA_RX */
+	  }
+
+	  osDelay(10);
   }
-  /* USER CODE END usart2_print2_func */
+  /* USER CODE END usart2_rx_func */
 }
 
 /* Private application code --------------------------------------------------*/
