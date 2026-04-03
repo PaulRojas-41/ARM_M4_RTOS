@@ -150,7 +150,7 @@ void led_blink_func(void *argument)
   for(;;)
   {
 	GPIOD->ODR ^= (1 << 15);
-    osDelay(1000);
+    osDelay(100);
   }
   /* USER CODE END led_blink_func */
 }

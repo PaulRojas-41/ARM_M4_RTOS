@@ -56,6 +56,9 @@ default.size.stdout \
 OBJDUMP_LIST += \
 ARM_M4_RTOS.list \
 
+OBJCOPY_BIN += \
+ARM_M4_RTOS.bin \
+
 
 # All Target
 all: main-build
@@ -79,12 +82,17 @@ ARM_M4_RTOS.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
+ARM_M4_RTOS.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "ARM_M4_RTOS.bin"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 # Other Targets
 clean:
-	-$(RM) ARM_M4_RTOS.elf ARM_M4_RTOS.list ARM_M4_RTOS.map default.size.stdout
+	-$(RM) ARM_M4_RTOS.bin ARM_M4_RTOS.elf ARM_M4_RTOS.list ARM_M4_RTOS.map default.size.stdout
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'
