@@ -58,15 +58,14 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
   * @retval int
   */
-uint8_t tx_buffer[] = {"Application executing....\n"};
-uint8_t tx_buffer_rtos[] = {"RTOS called ... \n"};
+
+uint8_t main_tx_buffer[] = {"Application main thread preempted....\n"};
 
 int main(void)
 {
@@ -81,8 +80,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  /* fetch of vector tables's application flash region  */
 
+  /* fetch of vector tables's application flash region  */
    SCB->VTOR = APPL_HEADER_START_ADDR;
    __enable_irq();
 
@@ -100,30 +99,18 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  	/* UART message for jump to app notification successfully */
-  	for(uint8_t j = 0; j < sizeof(tx_buffer); j++)
-  	{
-  		/* If TXE flag is set, write data byte to DR */
-  		while(!(USART2->SR & (1 << 6)));
-  		USART2->DR = (tx_buffer[j] & 0xFF);
-  		HAL_Delay(10);
-  	}
-
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  //osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
-  //MX_FREERTOS_Init();
+
+  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
+
+
+  MX_FREERTOS_Init();
 
   /* Start scheduler */
-  //osKernelStart();
-	for(uint8_t j = 0; j < sizeof(tx_buffer_rtos); j++)
-	{
-		/* If TXE flag is set, write data byte to DR */
-		while(!(USART2->SR & (1 << 6)));
-		USART2->DR = (tx_buffer_rtos[j] & 0xFF);
-		HAL_Delay(10);
-	}
+  osKernelStart();
+
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
@@ -131,8 +118,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  GPIOD->ODR ^= (1 << 13);
-	  HAL_Delay(1000);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

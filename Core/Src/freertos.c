@@ -22,8 +22,6 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "usart.h"
-#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -54,29 +52,30 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-uint8_t rx_buffer[4];
-
+uint8_t rtos_tx_buffer[] = {"JUMP to RTOS appl successful...\n"};
+uint8_t rtos_rx_buffer[5];
 /* USER CODE END Variables */
 /* Definitions for led_blink */
+
 osThreadId_t led_blinkHandle;
 const osThreadAttr_t led_blink_attributes = {
   .name = "led_blink",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal7,
+  .priority = (osPriority_t) osPriorityLow6,
 };
 /* Definitions for usart2_tx */
 osThreadId_t usart2_txHandle;
 const osThreadAttr_t usart2_tx_attributes = {
   .name = "usart2_tx",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityHigh2,
+  .priority = (osPriority_t) osPriorityNormal3,
 };
 /* Definitions for usart2_rx */
 osThreadId_t usart2_rxHandle;
 const osThreadAttr_t usart2_rx_attributes = {
   .name = "usart2_rx",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityRealtime1,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -124,7 +123,7 @@ void MX_FREERTOS_Init(void) {
   usart2_txHandle = osThreadNew(usart2_tx_func, NULL, &usart2_tx_attributes);
 
   /* creation of usart2_rx */
-  usart2_rxHandle = osThreadNew(usart2_rx_func, NULL, &usart2_rx_attributes);
+  //usart2_rxHandle = osThreadNew(usart2_rx_func, NULL, &usart2_rx_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -168,13 +167,13 @@ void usart2_tx_func(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	  for(uint8_t j = 0; j < sizeof(rx_buffer); j++)
+	  for(uint8_t j = 0; j < sizeof(rtos_tx_buffer); j++)
 	 {
 	  	 /* If TXE flag is set, write data byte to DR */
 	  	 while(!(USART2->SR & (1 << 6)));
-	  	 USART2->DR = (rx_buffer[j] & 0xFF);
+	  	 USART2->DR = (rtos_tx_buffer[j] & 0xFF);
 	 }
-	 osDelay(10);
+	 osDelay(100);
   }
   /* USER CODE END usart2_tx_func */
 }
@@ -188,19 +187,26 @@ void usart2_tx_func(void *argument)
 /* USER CODE END Header_usart2_rx_func */
 void usart2_rx_func(void *argument)
 {
-
   /* USER CODE BEGIN usart2_rx_func */
   /* Infinite loop */
   for(;;)
   {
-	  for(uint8_t i= 0; i < sizeof(rx_buffer); i++)
+	  /* ISSUE: RTOS_BOOT_JUMP_ISSUE
+	   * COMMIT: 14019ca.
+	   * CAUSE: For being a high priority task, it pre-empts the main() thread flow
+	   * execution, therefore, jumps straight away to the for(;;) (line 192) and the scheduler
+	   * never starts (osKernelStart();).
+	   * Fix in the next commit */
+
+	  /*
+	  for(uint8_t i= 0; i < sizeof(rtos_rx_buffer); i++)
 	  {
-	  	/* When a character is received, wait until RXNE flag is set, then read data */
+	  	/* When a character is received, wait until RXNE flag is set, then read data
 	  	while(!(USART2->SR & (1 << 5)));
-	  	rx_buffer[i] = USART2->DR; /* 0xFF & DATA_RX */
+	  	rtos_rx_buffer[i] = USART2->DR; /* 0xFF & DATA_RX
 	  }
 
-	  osDelay(10);
+	  osDelay(10);*/
   }
   /* USER CODE END usart2_rx_func */
 }
