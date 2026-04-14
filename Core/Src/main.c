@@ -65,7 +65,15 @@ void MX_FREERTOS_Init(void);
   * @retval int
   */
 
-uint8_t main_tx_buffer[] = {"Application main thread preempted....\n"};
+uint8_t tx_appl_buffer[] = {"Application main thread preempted....\n"};
+
+/* non-optimizable flash section defined for allocate the appl key to be validate */
+__attribute__((section(".appl_header"))) const appl_header_t appl_header =
+{
+		.magic_number = APPL_VALID_KEY,
+		.ota_flag     = 0,
+		.checksum     = 0
+};
 
 int main(void)
 {
@@ -81,8 +89,10 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
-  /* fetch of vector tables's application flash region  */
-   SCB->VTOR = APPL_HEADER_START_ADDR;
+  /* Application startup time procedures:
+   * Re-fetch of vector tables's application flash region / reset handler entry point
+   * Enable interrupts previously disabled by the Bootloader */
+   SCB->VTOR = APPL_START_ADDR;
    __enable_irq();
 
   /* USER CODE END Init */

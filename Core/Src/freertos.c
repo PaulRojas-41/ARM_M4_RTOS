@@ -173,7 +173,7 @@ void usart2_tx_func(void *argument)
 	  	 while(!(USART2->SR & (1 << 6)));
 	  	 USART2->DR = (rtos_tx_buffer[j] & 0xFF);
 	 }
-	 osDelay(100);
+	 osDelay(1000);
   }
   /* USER CODE END usart2_tx_func */
 }
@@ -196,17 +196,13 @@ void usart2_rx_func(void *argument)
 	   * CAUSE: For being a high priority task, it pre-empts the main() thread flow
 	   * execution, therefore, jumps straight away to the for(;;) (line 192) and the scheduler
 	   * never starts (osKernelStart();).
-	   * Fix in the next commit */
-
-	  /*
-	  for(uint8_t i= 0; i < sizeof(rtos_rx_buffer); i++)
+	   * Fix in the next commit
+	   * for(uint8_t i= 0; i < sizeof(rtos_rx_buffer); i++)
 	  {
 	  	/* When a character is received, wait until RXNE flag is set, then read data
 	  	while(!(USART2->SR & (1 << 5)));
-	  	rtos_rx_buffer[i] = USART2->DR; /* 0xFF & DATA_RX
-	  }
-
-	  osDelay(10);*/
+	  	rtos_rx_buffer[i] = USART2->DR; 0xFF & DATA_RX
+	  } */
   }
   /* USER CODE END usart2_rx_func */
 }
