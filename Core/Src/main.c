@@ -65,12 +65,12 @@ void MX_FREERTOS_Init(void);
   * @retval int
   */
 
-uint8_t tx_appl_buffer[] = {"Application main thread preempted....\n"};
-
-/* non-optimizable flash section defined for allocate the appl key to be validate */
+/* Flash section non-optimizable defined for allocate the appl key to be validate */
 __attribute__((section(".appl_header"))) const appl_header_t appl_header =
 {
-		.magic_number = APPL_VALID_KEY,
+		.magic_number = 0xAAAACCCC,
+		.crc32        = 0x0BB5A287,
+		.appl_size    = 21248,
 		.ota_flag     = 0,
 		.checksum     = 0
 };
